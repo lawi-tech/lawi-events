@@ -52,21 +52,12 @@ function inferStatus(val: string) {
   return 'novo' as const
 }
 
-export interface ParseResult {
-  leads: Lead[]
-  evento: string
-  source: LeadSource
-  warnings: string[]
-}
-
-export function parseCSV(raw: string, eventoName: string): ParseResult {
+export function parseCSV(raw: string, eventoName: string): { leads: Lead[]; warnings: string[] } {
   const text = fixEncoding(raw)
   const lines = text.split(/\r?\n/).filter(l => l.trim())
-  if (lines.length < 2) return { leads: [], evento: eventoName, source: 'hermes_csv', warnings: ['CSV vazio ou sem dados.'] }
+  if (lines.length < 2) return { leads: [], warnings: ['CSV vazio ou sem dados.'] }
 
   const sep = detectSeparator(lines[0])
-
-  // Mapeia headers normalizados → índice, ignorando colunas vazias
   const rawHeaders = parseCSVLine(lines[0], sep)
   const headerMap: Record<string, number> = {}
   rawHeaders.forEach((h, i) => {
@@ -86,7 +77,6 @@ export function parseCSV(raw: string, eventoName: string): ParseResult {
 
   const leads: Lead[] = []
   const capturedAt = new Date().toISOString()
-  const warnings: string[] = []
 
   for (let i = 1; i < lines.length; i++) {
     const row = parseCSVLine(lines[i], sep)
@@ -95,15 +85,17 @@ export function parseCSV(raw: string, eventoName: string): ParseResult {
     const name = get(row, 'name', 'nome', 'lead', 'empresa', 'company')
     if (!name) continue
 
-    // País: só aceita se for string curta e razoável (< 60 chars, sem vírgulas internas)
     const countryRaw = get(row, 'country', 'país', 'pais', 'região', 'regiao')
-    const country = countryRaw.length < 60 && !countryRaw.includes(';') ? countryRaw : ''
-
-    // Industry: idem
+    const country = countryRaw.length < 60 ? countryRaw : ''
     const industryRaw = get(row, 'industry', 'industria', 'setor', 'sector')
     const industry = industryRaw.length < 80 ? industryRaw : ''
-
     const fitScore = parseScore(get(row, 'fit_score', 'score', 'rating', 'prioridade'))
+
+    // Campos jurídicos (fase 2 do prompt Hermes)
+    const maturidadeRaw = get(row, 'maturidade_juridica', 'maturidade', 'maturidadejuridica')
+    const maturidade = ['Alto','Médio','Baixo','não avaliado'].includes(maturidadeRaw)
+      ? maturidadeRaw as any
+      : (maturidadeRaw || '')
 
     const lead: Lead = {
       id: `lead-${Date.now()}-${i}-${Math.random().toString(36).slice(2, 7)}`,
@@ -113,11 +105,14 @@ export function parseCSV(raw: string, eventoName: string): ParseResult {
       industry,
       fitScore,
       scoreRating: scoreToRating(fitScore),
-      matchReasons: get(row, 'match_reasons'),
-      elevatorPitch: get(row, 'elevatorpitch', 'elevator_pitch', 'descricao', 'pitch'),
+      matchReasons: get(row, 'match_reasons', 'razao_fit', 'razao'),
+      elevatorPitch: get(row, 'elevatorpitch', 'elevator_pitch', 'pitch', 'descricao'),
+      documentosEncontrados: get(row, 'documentos_encontrados', 'documentos'),
+      maturidadeJuridica: maturidade,
+      oportunidadeLawi: get(row, 'oportunidade_lawi', 'oportunidade'),
       status: inferStatus(get(row, 'status')),
-      responsavel: get(row, 'responsável', 'responsavel', 'owner', 'assigned'),
-      notes: get(row, 'notes', 'notas', 'observações', 'observacoes'),
+      responsavel: get(row, 'responsável', 'responsavel', 'owner'),
+      notes: get(row, 'notes', 'notas', 'observações'),
       linkedin: get(row, 'linkedin', 'linkedin_url'),
       email: get(row, 'email', 'e-mail'),
       source: isHermes ? 'hermes_csv' : 'manual',
@@ -129,8 +124,9 @@ export function parseCSV(raw: string, eventoName: string): ParseResult {
 
   leads.sort((a, b) => (b.fitScore ?? -1) - (a.fitScore ?? -1))
 
-  if (leads.length === 0) warnings.push('Nenhum lead encontrado. Verifique se o CSV tem coluna "name" ou "nome".')
-  else warnings.push(`${leads.length} leads importados (sep: "${sep}", schema: ${isHermes ? 'Hermes' : 'padrão'}).`)
+  const warnings: string[] = []
+  if (leads.length === 0) warnings.push('Nenhum lead encontrado.')
+  else warnings.push(`${leads.length} leads carregados.`)
 
-  return { leads, evento: eventoName, source: isHermes ? 'hermes_csv' : 'manual', warnings }
+  return { leads, warnings }
 }

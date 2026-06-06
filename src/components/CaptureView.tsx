@@ -52,6 +52,9 @@ export function CaptureView({ onAddLead, eventoName }: CaptureViewProps) {
       email: form.email.trim(),
       source: 'captura_evento',
       evento: eventoName || 'Evento',
+      documentosEncontrados: '',
+      maturidadeJuridica: '',
+      oportunidadeLawi: '',
     })
     setForm(empty)
     setSaved(true)

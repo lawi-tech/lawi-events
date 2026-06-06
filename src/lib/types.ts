@@ -1,41 +1,45 @@
-// ─── Types ───────────────────────────────────────────────────────────────────
-
 export type ScoreRating = 'high' | 'mid' | 'low' | 'unscored'
 export type LeadStatus = 'novo' | 'abordado' | 'reuniao' | 'proposta' | 'convertido' | 'descartado'
 export type LeadSource = 'hermes_csv' | 'captura_evento' | 'manual'
+export type MaturidadeJuridica = 'Alto' | 'Médio' | 'Baixo' | 'não avaliado' | ''
 
 export interface Lead {
   id: string
-  // Identidade
   name: string
   company: string
   country: string
   industry: string
-  // Scoring Hermes
   fitScore: number | null
   scoreRating: ScoreRating
   matchReasons: string
   elevatorPitch: string
+  // Campos jurídicos (output do prompt Hermes fase 2)
+  documentosEncontrados: string
+  maturidadeJuridica: MaturidadeJuridica
+  oportunidadeLawi: string
   // CRM
   status: LeadStatus
   responsavel: string
   notes: string
   linkedin: string
   email: string
-  // Meta
   source: LeadSource
   evento: string
   capturedAt: string
 }
 
+export interface EventoConfig {
+  name: string
+  file: string
+}
+
 export interface EventSession {
   id: string
   name: string
+  file: string
   leads: Lead[]
-  importedAt: string
+  loadedAt: string
 }
-
-// ─── Score helpers ────────────────────────────────────────────────────────────
 
 export function scoreToRating(score: number | null): ScoreRating {
   if (score === null) return 'unscored'
@@ -45,10 +49,10 @@ export function scoreToRating(score: number | null): ScoreRating {
 }
 
 export const SCORE_LABELS: Record<ScoreRating, string> = {
-  high: '🔥 Alto',
-  mid: '☀️ Médio',
-  low: '❄️ Baixo',
-  unscored: '— Sem score',
+  high: 'Alto',
+  mid: 'Médio',
+  low: 'Baixo',
+  unscored: 'Sem score',
 }
 
 export const STATUS_LABELS: Record<LeadStatus, string> = {
@@ -61,7 +65,7 @@ export const STATUS_LABELS: Record<LeadStatus, string> = {
 }
 
 export const STATUS_COLORS: Record<LeadStatus, string> = {
-  novo: 'rgba(255,255,255,0.18)',
+  novo: 'rgba(255,255,255,0.15)',
   abordado: '#f59e0b',
   reuniao: '#8b5cf6',
   proposta: '#3b82f6',
@@ -70,8 +74,6 @@ export const STATUS_COLORS: Record<LeadStatus, string> = {
 }
 
 export const RESPONSAVEIS = ['Benjamin', 'Eugenia', 'Rayane', 'Alisson', 'Gabriela', 'Jessica', 'Verber']
-
-// ─── FUP ────────────────────────────────────────────────────────────────────
 
 export interface FupAlert {
   leadId: string
