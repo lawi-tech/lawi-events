@@ -92,7 +92,9 @@ export default function App() {
             <DashboardView
               leads={allLeads}
               fupAlerts={fupAlerts}
-              eventoName={activeSession?.name ?? ''}
+              sessions={sessions}
+              activeSessionId={activeSessionId}
+              onSelectSession={id => setActiveSessionId(id)}
               onLeadClick={handleDashboardLeadClick}
             />
           )}
