@@ -197,8 +197,14 @@ export function LeadsView({ leads, onUpdateStatus, onUpdateLead }: LeadsViewProp
                     </td>
                     <td style={{ padding: '10px 12px' }} onClick={e => e.stopPropagation()}>
                       <select value={lead.status} onChange={e => onUpdateStatus(lead.id, e.target.value as LeadStatus)}
-                        style={{ ...SEL, borderColor: `${STATUS_COLORS[lead.status]}44`, background: `${STATUS_COLORS[lead.status]}18` }}>
-                        {(Object.keys(STATUS_LABELS) as LeadStatus[]).map(s => <option key={s} value={s} style={{ background: '#0d1f35' }}>{STATUS_LABELS[s]}</option>)}
+                        style={{
+                          ...SEL,
+                          borderColor: `${STATUS_COLORS[lead.status]}66`,
+                          background: lead.status === 'novo' ? 'rgba(255,255,255,0.08)' : `${STATUS_COLORS[lead.status]}22`,
+                          color: lead.status === 'novo' ? 'rgba(255,255,255,0.7)' : STATUS_COLORS[lead.status],
+                          fontWeight: 600,
+                        }}>
+                        {(Object.keys(STATUS_LABELS) as LeadStatus[]).map(s => <option key={s} value={s} style={{ background: '#0d1f35', color: '#ffffff' }}>{STATUS_LABELS[s]}</option>)}
                       </select>
                     </td>
                     <td style={{ padding: '10px 12px' }} onClick={e => e.stopPropagation()}>
