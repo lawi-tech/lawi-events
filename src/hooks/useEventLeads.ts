@@ -2,34 +2,42 @@ import { useState, useEffect, useCallback } from 'react'
 import type { Lead, LeadStatus, EventSession, EventoConfig } from '../lib/types'
 import { parseCSV } from '../lib/csv-parser'
 
-const OVERRIDES_KEY = 'lawi_events_overrides' // status/responsavel/notas editados pelo usuário
+const WORKER_URL = 'https://lawi-events.verber.workers.dev'
 
-// Carrega overrides do localStorage (edições do usuário)
-function loadOverrides(): Record<string, Partial<Lead>> {
+async function fetchOverrides(evento: string): Promise<Record<string, Partial<Lead>>> {
   try {
-    const s = localStorage.getItem(OVERRIDES_KEY)
-    return s ? JSON.parse(s) : {}
+    const res = await fetch(`${WORKER_URL}/overrides?evento=${encodeURIComponent(evento)}`)
+    return res.ok ? res.json() : {}
   } catch { return {} }
 }
 
-function saveOverrides(overrides: Record<string, Partial<Lead>>) {
-  try { localStorage.setItem(OVERRIDES_KEY, JSON.stringify(overrides)) } catch {}
-}
-
-// Aplica overrides do usuário sobre os leads do CSV
-function applyOverrides(leads: Lead[], overrides: Record<string, Partial<Lead>>): Lead[] {
-  return leads.map(l => overrides[l.id] ? { ...l, ...overrides[l.id] } : l)
+async function saveOverride(lead: Lead, patch: Partial<Lead>) {
+  try {
+    await fetch(`${WORKER_URL}/overrides`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        lead_id:     lead.id,
+        evento:      lead.evento,
+        status:      patch.status      ?? lead.status,
+        responsavel: patch.responsavel ?? lead.responsavel,
+        notes:       patch.notes       ?? lead.notes,
+      }),
+    })
+  } catch (e) {
+    console.error('Erro ao salvar override:', e)
+  }
 }
 
 export function useEventLeads() {
   const [eventos, setEventos] = useState<EventoConfig[]>([])
   const [sessions, setSessions] = useState<EventSession[]>([])
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null)
-  const [overrides, setOverrides] = useState<Record<string, Partial<Lead>>>(loadOverrides)
+  const [overrides, setOverrides] = useState<Record<string, Partial<Lead>>>({})
   const [loading, setLoading] = useState(true)
   const [manualLeads, setManualLeads] = useState<Lead[]>([])
 
-  // Carrega index.json com lista de eventos
+  // Carrega index.json
   useEffect(() => {
     fetch('/eventos/index.json')
       .then(r => r.json())
@@ -37,7 +45,7 @@ export function useEventLeads() {
       .catch(() => setEventos([]))
   }, [])
 
-  // Carrega CSVs de todos os eventos
+  // Carrega CSVs
   useEffect(() => {
     if (eventos.length === 0) { setLoading(false); return }
     setLoading(true)
@@ -47,52 +55,50 @@ export function useEventLeads() {
           const res = await fetch(`/eventos/${ev.file}`)
           const text = await res.text()
           const { leads } = parseCSV(text, ev.name)
-          // Usa o nome do arquivo como ID estável para os leads
           const stableLeads = leads.map((l, i) => ({
             ...l,
             id: `${ev.file}-${i}`,
             evento: ev.name,
           }))
-          return {
-            id: ev.file,
-            name: ev.name,
-            file: ev.file,
-            leads: stableLeads,
-            loadedAt: new Date().toISOString(),
-          } as EventSession
-        } catch {
-          return null
-        }
+          return { id: ev.file, name: ev.name, file: ev.file, leads: stableLeads, loadedAt: new Date().toISOString() } as EventSession
+        } catch { return null }
       })
     ).then(results => {
       const valid = results.filter(Boolean) as EventSession[]
       setSessions(valid)
-      if (valid.length > 0 && !activeSessionId) setActiveSessionId(valid[0].id)
+      if (valid.length > 0) setActiveSessionId(valid[0].id)
       setLoading(false)
     })
   }, [eventos])
 
+  // Carrega overrides do Notion quando sessão muda
+  useEffect(() => {
+    const session = sessions.find(s => s.id === activeSessionId)
+    if (!session) return
+    fetchOverrides(session.name).then(setOverrides)
+  }, [activeSessionId, sessions])
+
   const activeSession = sessions.find(s => s.id === activeSessionId) ?? null
 
-  // Leads ativos = CSV + overrides do usuário + leads manuais
-  const allLeads = activeSession
-    ? [...applyOverrides(activeSession.leads, overrides), ...manualLeads.filter(l => l.evento === activeSession.name)]
-    : manualLeads
+  // Aplica overrides sobre os leads do CSV
+  const allLeads = (activeSession?.leads ?? []).map(l => {
+    const ov = overrides[l.id]
+    return ov ? { ...l, ...ov } : l
+  }).concat(manualLeads.filter(l => l.evento === activeSession?.name))
 
-  // Atualiza um campo do lead (persiste no localStorage)
   const updateLead = useCallback((leadId: string, patch: Partial<Lead>) => {
-    setOverrides(prev => {
-      const updated = { ...prev, [leadId]: { ...(prev[leadId] || {}), ...patch } }
-      saveOverrides(updated)
-      return updated
-    })
-  }, [])
+    // Atualiza estado local imediatamente
+    setOverrides(prev => ({ ...prev, [leadId]: { ...(prev[leadId] || {}), ...patch } }))
+    // Persiste no Notion em background
+    const session = sessions.find(s => s.id === activeSessionId)
+    const lead = session?.leads.find(l => l.id === leadId)
+    if (lead) saveOverride(lead, patch)
+  }, [sessions, activeSessionId])
 
   const updateStatus = useCallback((leadId: string, status: LeadStatus) => {
     updateLead(leadId, { status })
   }, [updateLead])
 
-  // Captura manual no evento
   const addLead = useCallback((lead: Omit<Lead, 'id' | 'capturedAt'>) => {
     const newLead: Lead = {
       ...lead,
@@ -102,16 +108,5 @@ export function useEventLeads() {
     setManualLeads(prev => [newLead, ...prev])
   }, [])
 
-  return {
-    eventos,
-    sessions,
-    activeSession,
-    activeSessionId,
-    setActiveSessionId,
-    allLeads,
-    loading,
-    updateLead,
-    updateStatus,
-    addLead,
-  }
+  return { eventos, sessions, activeSession, activeSessionId, setActiveSessionId, allLeads, loading, updateLead, updateStatus, addLead }
 }
