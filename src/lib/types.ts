@@ -23,6 +23,7 @@ export interface Lead {
   notes: string
   linkedin: string
   email: string
+  conviteLatam: boolean
   source: LeadSource
   evento: string
   capturedAt: string
@@ -73,7 +74,7 @@ export const STATUS_COLORS: Record<LeadStatus, string> = {
   descartado: '#ef4444',
 }
 
-export const RESPONSAVEIS = ['Benjamin', 'Eugenia', 'Rayane', 'Alisson', 'Gabriela', 'Eduardo', 'Jessica', 'Verber']
+export const RESPONSAVEIS = ['Benjamin', 'Eugenia', 'Rayane', 'Alisson', 'Gabriela', 'Jessica', 'Eduardo', 'Verber']
 
 export interface FupAlert {
   leadId: string
