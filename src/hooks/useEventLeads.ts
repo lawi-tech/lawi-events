@@ -17,11 +17,12 @@ async function saveOverride(lead: Lead, patch: Partial<Lead>) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        lead_id:     lead.id,
-        evento:      lead.evento,
-        status:      patch.status      ?? lead.status,
-        responsavel: patch.responsavel ?? lead.responsavel,
-        notes:       patch.notes       ?? lead.notes,
+        lead_id:      lead.id,
+        evento:       lead.evento,
+        status:       patch.status       ?? lead.status,
+        responsavel:  patch.responsavel  ?? lead.responsavel,
+        notes:        patch.notes        ?? lead.notes,
+        conviteLatam: patch.conviteLatam !== undefined ? patch.conviteLatam : lead.conviteLatam,
       }),
     })
   } catch (e) {
