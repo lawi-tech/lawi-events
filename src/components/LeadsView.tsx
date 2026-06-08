@@ -168,6 +168,9 @@ export function LeadsView({ leads, onUpdateStatus, onUpdateLead }: LeadsViewProp
                 <Th label="Empresa"      sortK="name"       filterK="score"      options={scores.map(s => s === 'all' ? 'all' : SCORE_LABELS[s as ScoreRating] || s)} />
                 <Th label="Status"       sortK="status"     filterK="status"     options={statuses} />
                 <Th label="Responsável"  sortK="responsavel" filterK="responsavel" options={resps.map(r => r === '' ? '(sem responsável)' : r)} />
+                <th style={{ padding: '9px 12px', textAlign: 'center', fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', whiteSpace: 'nowrap' }}>
+                  Latam
+                </th>
                 <th style={{ padding: '9px 12px' }} />
               </tr>
             </thead>
@@ -176,7 +179,7 @@ export function LeadsView({ leads, onUpdateStatus, onUpdateLead }: LeadsViewProp
                 ? <tr><td colSpan={6} style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>Nenhum lead encontrado.</td></tr>
                 : filtered.map(lead => (
                   <tr key={lead.id} onClick={() => setSelected(s => s?.id === lead.id ? null : lead)}
-                    style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer', background: selected?.id === lead.id ? 'var(--surface-hover)' : 'transparent' }}
+                    style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer', background: lead.conviteLatam ? 'rgba(0,184,169,0.07)' : selected?.id === lead.id ? 'var(--surface-hover)' : 'transparent', borderLeft: lead.conviteLatam ? '3px solid var(--teal)' : '3px solid transparent' }}
                     onMouseEnter={e => { if (selected?.id !== lead.id) (e.currentTarget as HTMLElement).style.background = 'var(--surface)' }}
                     onMouseLeave={e => { if (selected?.id !== lead.id) (e.currentTarget as HTMLElement).style.background = 'transparent' }}
                   >
@@ -212,6 +215,15 @@ export function LeadsView({ leads, onUpdateStatus, onUpdateLead }: LeadsViewProp
                         <option value="" style={{ background: '#0d1f35' }}>—</option>
                         {RESPONSAVEIS.map(r => <option key={r} value={r} style={{ background: '#0d1f35' }}>{r}</option>)}
                       </select>
+                    </td>
+                    <td style={{ padding: '10px 12px', textAlign: 'center' }} onClick={e => e.stopPropagation()}>
+                      <input
+                        type="checkbox"
+                        checked={!!lead.conviteLatam}
+                        onChange={e => onUpdateLead(lead.id, { conviteLatam: e.target.checked })}
+                        title="Latam Connection"
+                        style={{ width: 15, height: 15, cursor: 'pointer', accentColor: 'var(--teal)' }}
+                      />
                     </td>
                     <td style={{ padding: '10px 12px' }} onClick={e => e.stopPropagation()}>
                       <div style={{ display: 'flex', gap: 8 }}>
