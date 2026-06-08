@@ -50,6 +50,7 @@ export function CaptureView({ onAddLead, eventoName }: CaptureViewProps) {
       notes: form.notes.trim(),
       linkedin: form.linkedin.trim(),
       email: form.email.trim(),
+      conviteLatam: false,
       source: 'captura_evento',
       evento: eventoName || 'Evento',
       documentosEncontrados: '',
