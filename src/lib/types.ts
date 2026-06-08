@@ -1,5 +1,5 @@
 export type ScoreRating = 'high' | 'mid' | 'low' | 'unscored'
-export type LeadStatus = 'novo' | 'abordado' | 'reuniao' | 'Latam Connection' | 'convertido' | 'descartado'
+export type LeadStatus = 'novo' | 'abordado' | 'reuniao' | 'proposta' | 'convertido' | 'descartado'
 export type LeadSource = 'hermes_csv' | 'captura_evento' | 'manual'
 export type MaturidadeJuridica = 'Alto' | 'Médio' | 'Baixo' | 'não avaliado' | ''
 
