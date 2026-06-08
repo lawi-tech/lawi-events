@@ -87,12 +87,22 @@ export function useEventLeads() {
   }).concat(manualLeads.filter(l => l.evento === activeSession?.name))
 
   const updateLead = useCallback((leadId: string, patch: Partial<Lead>) => {
-    // Atualiza estado local imediatamente
-    setOverrides(prev => ({ ...prev, [leadId]: { ...(prev[leadId] || {}), ...patch } }))
-    // Persiste no Notion em background
-    const session = sessions.find(s => s.id === activeSessionId)
-    const lead = session?.leads.find(l => l.id === leadId)
-    if (lead) saveOverride(lead, patch)
+    // Atualiza estado local imediatamente e persiste o estado COMPLETO no Notion
+    setOverrides(prev => {
+      const merged = { ...(prev[leadId] || {}), ...patch }
+      // Persiste estado completo em background
+      const session = sessions.find(s => s.id === activeSessionId)
+      const baseLead = session?.leads.find(l => l.id === leadId)
+      if (baseLead) {
+        const fullLead = { ...baseLead, ...merged }
+        saveOverride(fullLead, {
+          status:      fullLead.status,
+          responsavel: fullLead.responsavel,
+          notes:       fullLead.notes,
+        })
+      }
+      return { ...prev, [leadId]: merged }
+    })
   }, [sessions, activeSessionId])
 
   const updateStatus = useCallback((leadId: string, status: LeadStatus) => {
