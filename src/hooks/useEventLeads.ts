@@ -96,9 +96,10 @@ export function useEventLeads() {
       if (baseLead) {
         const fullLead = { ...baseLead, ...merged }
         saveOverride(fullLead, {
-          status:      fullLead.status,
-          responsavel: fullLead.responsavel,
-          notes:       fullLead.notes,
+          status:        fullLead.status,
+          responsavel:   fullLead.responsavel,
+          notes:         fullLead.notes,
+          conviteLatam:  fullLead.conviteLatam,
         })
       }
       return { ...prev, [leadId]: merged }
