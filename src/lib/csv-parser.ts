@@ -115,6 +115,7 @@ export function parseCSV(raw: string, eventoName: string): { leads: Lead[]; warn
       notes: get(row, 'notes', 'notas', 'observações'),
       linkedin: get(row, 'linkedin', 'linkedin_url'),
       email: get(row, 'email', 'e-mail'),
+      conviteLatam: false,
       source: isHermes ? 'hermes_csv' : 'manual',
       evento: eventoName,
       capturedAt,
