@@ -1,5 +1,5 @@
 export type ScoreRating = 'high' | 'mid' | 'low' | 'unscored'
-export type LeadStatus = 'novo' | 'abordado' | 'reuniao' | 'proposta' | 'convertido' | 'descartado'
+export type LeadStatus = 'novo' | 'abordado' | 'reuniao' | 'Latam Connection' | 'convertido' | 'descartado'
 export type LeadSource = 'hermes_csv' | 'captura_evento' | 'manual'
 export type MaturidadeJuridica = 'Alto' | 'Médio' | 'Baixo' | 'não avaliado' | ''
 
@@ -73,7 +73,7 @@ export const STATUS_COLORS: Record<LeadStatus, string> = {
   descartado: '#ef4444',
 }
 
-export const RESPONSAVEIS = ['Benjamin', 'Eugenia', 'Rayane', 'Alisson', 'Gabriela', 'Jessica', 'Verber']
+export const RESPONSAVEIS = ['Benjamin', 'Eugenia', 'Rayane', 'Alisson', 'Gabriela', 'Eduardo', 'Jessica', 'Verber']
 
 export interface FupAlert {
   leadId: string
